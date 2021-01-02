@@ -1,32 +1,53 @@
 from snippets.models import Snippet
-from snippets.serializers import SnippetSerializer
+from snippets.serializers import SnippetSerializer, UserSerializer
 from rest_framework import mixins
 from rest_framework import generics
+from django.contrib.auth.models import User
+from rest_framework import permissions
+from .permissions import IsOwnerOrReadOnlyPermission
+
 
 
 # Class Based Views with mixins
 
-class SnippetDetailView(mixins.ListModelMixin,
-                    mixins.CreateModelMixin,
-                    generics.GenericAPIView):
-        
-        queryset = Snippet.objects.all()
-        serializer_class = SnippetSerializer
+# class SnippetDetailView(mixins.ListModelMixin,
+#                     mixins.CreateModelMixin,
+#                     generics.GenericAPIView):
+#         permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-        def get(self, request, *args, **kwargs):
-            return self.list(request, *args, **kwargs)
         
-        def post(self, request, *args, **kwargs):
-            return self.create(request, *args, **kwargs)
+#         queryset = Snippet.objects.all()
+#         serializer_class = SnippetSerializer
+
+#         def get(self, request, *args, **kwargs):
+#             return self.list(request, *args, **kwargs)
+        
+#         def post(self, request, *args, **kwargs):
+#             return self.create(request, *args, **kwargs)
 
 class SnippetListView(generics.ListCreateAPIView):
+    permission_classes = [IsOwnerOrReadOnlyPermission]
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(owner = self.request.user)
+
 
 class SnippetDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly,
+                      IsOwnerOrReadOnlyPermission]
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
 
+
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+class UserDetailView(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 # Class Based Views
 
